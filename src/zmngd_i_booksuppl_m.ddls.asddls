@@ -8,7 +8,7 @@ define view entity ZMNGD_I_BookSuppl_M
   association        to parent ZMNGD_I_Booking_M as _Booking        on  $projection.TravelId  = _Booking.TravelId
                                                                     and $projection.BookingId = _Booking.BookingId
 
-  association [1..1] to /DMO/I_Travel_M          as _Travel         on  $projection.TravelId = _Travel.travel_id
+  association [1..1] to ZMNGD_I_Travel_M         as _Travel         on  $projection.TravelId = _Travel.TravelId
   association [1..1] to /DMO/I_Supplement        as _Product        on  $projection.SupplementId = _Product.SupplementID
   association [1..*] to /DMO/I_SupplementText    as _SupplementText on  $projection.SupplementId = _SupplementText.SupplementID
 
