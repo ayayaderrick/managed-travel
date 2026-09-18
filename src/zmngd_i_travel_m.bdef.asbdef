@@ -1,0 +1,91 @@
+managed implementation in class zbp_mngd_i_travel_m unique;
+strict ( 2 );
+
+define behavior for ZMNGD_I_Travel_M alias Travel
+persistent table zmngd_travel_m
+lock master
+authorization master ( none )
+etag master LastChangedAt
+{
+  mapping for zmngd_travel_m
+    {
+      TravelId      = travel_id;
+      AgencyId      = agency_id;
+      CustomerId    = customer_id;
+      BeginDate     = begin_date;
+      EndDate       = end_date;
+      BookingFee    = booking_fee;
+      TotalPrice    = total_price;
+      CurrencyCode  = currency_code;
+      Description   = description;
+      OverallStatus = overall_status;
+      CreatedBy     = created_by;
+      CreatedAt     = created_at;
+      LastChangedBy = last_changed_by;
+      LastChangedAt = last_changed_at;
+    }
+
+  create ( authorization : global );
+  update;
+  delete;
+
+  field ( readonly ) TravelId;
+
+  association _Booking { create; }
+}
+
+define behavior for ZMNGD_I_Booking_M alias Booking
+persistent table zmngd_booking_m
+lock dependent by _Travel
+authorization dependent by _Travel
+etag master LastChangedAt
+{
+  mapping for zmngd_booking_m
+    {
+      TravelId      = travel_id;
+      BookingId     = booking_id;
+      BookingDate   = booking_date;
+      CustomerId    = customer_id;
+      CarrierId     = carrier_id;
+      ConnectionId  = connection_id;
+      FlightDate    = flight_date;
+      FlightPrice   = flight_price;
+      CurrencyCode  = currency_code;
+      BookingStatus = booking_status;
+      LastChangedAt = last_changed_at;
+    }
+
+  update;
+  delete;
+
+  field ( readonly ) TravelId, BookingId;
+
+  association _Travel;
+  association _BookSupplement { create; }
+}
+
+define behavior for ZMNGD_I_BookSuppl_M alias Booksuppl
+persistent table zmngd_booksupp_m
+lock dependent by _Travel
+authorization dependent by _Travel
+etag master LastChangedAt
+{
+  mapping for zmngd_booksupp_m
+    {
+      TravelId            = travel_id;
+      BookingId           = booking_id;
+      BookingSupplementId = booking_supplement_id;
+      SupplementId        = supplement_id;
+      Price               = price;
+      CurrencyCode        = currency_code;
+      LastChangedAt       = last_changed_at;
+    }
+
+  update;
+  delete;
+
+  field ( readonly ) TravelId, BookingId, BookingSupplementId;
+
+  association _Travel;
+  association _Booking;
+}
