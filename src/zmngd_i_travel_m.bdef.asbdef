@@ -1,7 +1,8 @@
-managed implementation in class zbp_mngd_i_travel_m unique;
+managed implementation in class zmngd_bp_travel_m unique;
 strict ( 2 );
 
 define behavior for ZMNGD_I_Travel_M alias Travel
+implementation in class zmngd_bp_travel_m unique
 persistent table zmngd_travel_m
 lock master
 authorization master ( none )
@@ -25,7 +26,7 @@ etag master LastChangedAt
       LastChangedAt = last_changed_at;
     }
 
-  create ( authorization : global );
+  create;
   update;
   delete;
 
@@ -35,6 +36,7 @@ etag master LastChangedAt
 }
 
 define behavior for ZMNGD_I_Booking_M alias Booking
+implementation in class zmngd_bp_booking_m unique
 persistent table zmngd_booking_m
 lock dependent by _Travel
 authorization dependent by _Travel
@@ -65,6 +67,7 @@ etag master LastChangedAt
 }
 
 define behavior for ZMNGD_I_BookSuppl_M alias Booksuppl
+implementation in class zmngd_bp_bookingsupplement_m unique
 persistent table zmngd_booksupp_m
 lock dependent by _Travel
 authorization dependent by _Travel
