@@ -5,6 +5,7 @@ define behavior for ZMNGD_I_Travel_M alias Travel
 implementation in class zmngd_bp_travel_m unique
 persistent table zmngd_travel_m
 lock master
+early numbering
 authorization master ( none )
 etag master LastChangedAt
 {
@@ -39,6 +40,7 @@ define behavior for ZMNGD_I_Booking_M alias Booking
 implementation in class zmngd_bp_booking_m unique
 persistent table zmngd_booking_m
 lock dependent by _Travel
+early numbering
 authorization dependent by _Travel
 etag master LastChangedAt
 {
@@ -70,6 +72,7 @@ define behavior for ZMNGD_I_BookSuppl_M alias Booksuppl
 implementation in class zmngd_bp_bookingsupplement_m unique
 persistent table zmngd_booksupp_m
 lock dependent by _Travel
+early numbering
 authorization dependent by _Travel
 etag master LastChangedAt
 {
