@@ -12,6 +12,8 @@ CLASS lhc_travel DEFINITION INHERITING FROM cl_abap_behavior_handler.
        keys FOR ACTION Travel~acceptTravel RESULT result.
     METHODS ReCalcTotalPrice FOR MODIFY
        keys FOR ACTION Travel~ReCalcTotalPrice.
+    METHODS rejectTravel FOR MODIFY
+       keys FOR ACTION Travel~rejectTravel RESULT result.
 
 ENDCLASS.
 
@@ -240,6 +242,24 @@ CLASS lhc_travel IMPLEMENTATION.
 
   ENDMETHOD.
 
+  METHOD rejectTravel.
+
+    " Modify in local mode: BO-related updates that are not relevant for authorization checks
+    MODIFY ENTITIES OF ZMNGD_I_Travel_M IN LOCAL MODE
+    ENTITY Travel
+    UPDATE FIELDS ( OverallStatus )
+    WITH VALUE #( FOR key IN keys ( %tky = key-%tky OverallStatus = 'X' ) ).
+
+    " Read changed data for action result
+    READ ENTITIES OF ZMNGD_I_Travel_M IN LOCAL MODE
+    ENTITY Travel
+    ALL FIELDS WITH CORRESPONDING #( keys )
+    RESULT DATA(travels).
+
+    result = VALUE #( FOR travel IN travels ( %tky = travel-%tky %param = travel ) ).
+
+  ENDMETHOD.
+
   METHOD ReCalcTotalPrice.
 
     TYPES: BEGIN OF ty_amount_per_currencycode,
@@ -319,6 +339,7 @@ CLASS lhc_travel IMPLEMENTATION.
     WITH CORRESPONDING #( travels ).
 
   ENDMETHOD.
+
 
 ENDCLASS.
 
