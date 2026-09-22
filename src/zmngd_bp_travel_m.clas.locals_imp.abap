@@ -10,6 +10,8 @@ CLASS lhc_travel DEFINITION INHERITING FROM cl_abap_behavior_handler.
        keys FOR ACTION Travel~copyTravel.
     METHODS acceptTravel FOR MODIFY
        keys FOR ACTION Travel~acceptTravel RESULT result.
+    METHODS ReCalcTotalPrice FOR MODIFY
+       keys FOR ACTION Travel~ReCalcTotalPrice.
 
 ENDCLASS.
 
@@ -235,6 +237,86 @@ CLASS lhc_travel IMPLEMENTATION.
     RESULT DATA(travels).
 
     result = VALUE #( FOR travel IN travels ( %tky = travel-%tky %param = travel ) ).
+
+  ENDMETHOD.
+
+  METHOD ReCalcTotalPrice.
+
+    TYPES: BEGIN OF ty_amount_per_currencycode,
+             amount        TYPE /dmo/total_price,
+             currency_code TYPE /dmo/currency_code,
+           END OF ty_amount_per_currencycode.
+
+    DATA: amounts_per_currencycode TYPE STANDARD TABLE OF ty_amount_per_currencycode.
+
+    " Read all relevant travel instances.
+    READ ENTITIES OF zmngd_I_Travel_M IN LOCAL MODE
+    ENTITY travel
+    FIELDS ( BookingFee CurrencyCode )
+    WITH CORRESPONDING #( keys )
+    RESULT DATA(travels).
+
+    DELETE travels WHERE CurrencyCode IS INITIAL.
+
+    " Read all associated bookings and add them to the total price.
+    READ ENTITIES OF zmngd_I_Travel_M IN LOCAL MODE
+    ENTITY travel BY \_booking
+    FIELDS ( FlightPrice CurrencyCode )
+    WITH CORRESPONDING #( travels )
+    RESULT DATA(bookings).
+
+    " Read all associated booking supplements and add them to the total price.
+    READ ENTITIES OF zmngd_I_Travel_M IN LOCAL MODE
+    ENTITY booking BY \_booksupplement
+    FIELDS ( price currencycode )
+    WITH CORRESPONDING #( bookings )
+    RESULT DATA(bookingsupplements).
+
+    LOOP AT travels ASSIGNING FIELD-SYMBOL(<travel>).
+      " Set the start for the calculation by adding the booking fee.
+      amounts_per_currencycode = VALUE #( ( amount        = <travel>-BookingFee
+                                            currency_code = <travel>-CurrencyCode ) ).
+      LOOP AT bookings INTO DATA(booking) USING KEY id WHERE   TravelId = <travel>-TravelId
+                                                       AND     CurrencyCode IS NOT INITIAL.
+        COLLECT VALUE ty_amount_per_currencycode( amount        = booking-FlightPrice
+                                                  currency_code = booking-CurrencyCode
+                                                ) INTO amounts_per_currencycode.
+      ENDLOOP.
+
+      LOOP AT bookingsupplements INTO DATA(bookingsupplement) USING KEY id WHERE   TravelId = <travel>-TravelId
+                                                                           AND     CurrencyCode IS NOT INITIAL.
+        COLLECT VALUE ty_amount_per_currencycode( amount        = bookingsupplement-price
+                                                  currency_code = bookingsupplement-CurrencyCode
+                                                ) INTO amounts_per_currencycode.
+      ENDLOOP.
+
+      DELETE amounts_per_currencycode WHERE currency_code IS INITIAL.
+      CLEAR <travel>-TotalPrice.
+
+      LOOP AT amounts_per_currencycode INTO DATA(amount_per_currencycode).
+        " If needed do a Currency Conversion
+        IF amount_per_currencycode-currency_code = <travel>-CurrencyCode.
+          <travel>-TotalPrice += amount_per_currencycode-amount.
+        ELSE.
+          /dmo/cl_flight_amdp=>convert_currency(
+             EXPORTING
+               iv_amount                   =  amount_per_currencycode-amount
+               iv_currency_code_source     =  amount_per_currencycode-currency_code
+               iv_currency_code_target     =  <travel>-CurrencyCode
+               iv_exchange_rate_date       =  cl_abap_context_info=>get_system_date( )
+             IMPORTING
+               ev_amount                   = DATA(total_booking_price_per_curr)
+            ).
+          <travel>-TotalPrice += total_booking_price_per_curr.
+        ENDIF.
+      ENDLOOP.
+    ENDLOOP.
+
+    " write back the modified total_price of travels
+    MODIFY ENTITIES OF zmngd_I_Travel_M IN LOCAL MODE
+    ENTITY travel
+    UPDATE FIELDS ( TotalPrice )
+    WITH CORRESPONDING #( travels ).
 
   ENDMETHOD.
 
