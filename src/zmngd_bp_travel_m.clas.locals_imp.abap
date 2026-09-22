@@ -8,6 +8,8 @@ CLASS lhc_travel DEFINITION INHERITING FROM cl_abap_behavior_handler.
        entities FOR CREATE Travel\_Booking.
     METHODS copyTravel FOR MODIFY
        keys FOR ACTION Travel~copyTravel.
+    METHODS acceptTravel FOR MODIFY
+       keys FOR ACTION Travel~acceptTravel RESULT result.
 
 ENDCLASS.
 
@@ -215,6 +217,24 @@ CLASS lhc_travel IMPLEMENTATION.
     MAPPED DATA(mapped_create).
 
     mapped-travel = mapped_create-travel.
+
+  ENDMETHOD.
+
+  METHOD acceptTravel.
+
+    " Modify in local mode: BO-related updates that are not relevant for authorization checks
+    MODIFY ENTITIES OF ZMNGD_I_Travel_M IN LOCAL MODE
+    ENTITY Travel
+    UPDATE FIELDS ( OverallStatus )
+    WITH VALUE #( FOR key IN keys ( %tky = key-%tky OverallStatus = 'A' ) ).
+
+    " Read changed data for action result
+    READ ENTITIES OF ZMNGD_I_Travel_M IN LOCAL MODE
+    ENTITY Travel
+    ALL FIELDS WITH CORRESPONDING #( keys )
+    RESULT DATA(travels).
+
+    result = VALUE #( FOR travel IN travels ( %tky = travel-%tky %param = travel ) ).
 
   ENDMETHOD.
 
