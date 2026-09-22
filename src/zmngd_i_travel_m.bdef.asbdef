@@ -33,6 +33,16 @@ etag master LastChangedAt
 
   field ( readonly ) TravelId;
 
+  // instance action and dynamic action control
+  action acceptTravel result [1] $self;
+  action rejectTravel result [1] $self;
+
+  // internal action that is called by determinations
+  internal action ReCalcTotalPrice;
+
+  // instance factory action for copying travel instances
+  factory action copyTravel [1];
+
   association _Booking { create; }
 }
 
