@@ -14,6 +14,8 @@ CLASS lhc_travel DEFINITION INHERITING FROM cl_abap_behavior_handler.
        keys FOR ACTION Travel~ReCalcTotalPrice.
     METHODS rejectTravel FOR MODIFY
        keys FOR ACTION Travel~rejectTravel RESULT result.
+    METHODS get_instance_features FOR INSTANCE FEATURES
+      keys REQUEST requested_features FOR Travel RESULT result.
 
 ENDCLASS.
 
@@ -340,6 +342,27 @@ CLASS lhc_travel IMPLEMENTATION.
 
   ENDMETHOD.
 
+
+  METHOD get_instance_features.
+
+    READ ENTITIES OF ZMNGD_I_Travel_M IN LOCAL MODE
+    ENTITY Travel
+    FIELDS ( TravelId OverallStatus )
+    WITH CORRESPONDING #( keys )
+    RESULT DATA(travels)
+    FAILED failed.
+
+    result = value #( for travel in travels (
+        %tky = travel-%tky
+        %features-%action-rejectTravel = COND #( WHEN travel-OverallStatus = 'X'
+                                                 THEN if_abap_behv=>fc-o-disabled ELSE if_abap_behv=>fc-o-enabled )
+        %features-%action-acceptTravel = COND #( WHEN travel-OverallStatus = 'A'
+                                                 THEN if_abap_behv=>fc-o-disabled ELSE if_abap_behv=>fc-o-enabled )
+        %assoc-_Booking = COND #( WHEN travel-OverallStatus = 'X'
+                                  THEN if_abap_behv=>fc-o-disabled ELSE if_abap_behv=>fc-o-enabled )
+     ) ).
+
+  ENDMETHOD.
 
 ENDCLASS.
 

@@ -31,11 +31,17 @@ etag master LastChangedAt
   update;
   delete;
 
+  // administrative fields: read only
+  field ( readonly ) LastChangedAt, LastChangedBy, CreatedAt, CreatedBy;
+
+  // mandatory fields that are required to create a travel
+  field ( mandatory ) AgencyId, CustomerId, BeginDate, EndDate, OverallStatus, BookingFee, CurrencyCode;
+
   field ( readonly ) TravelId;
 
   // instance action and dynamic action control
-  action acceptTravel result [1] $self;
-  action rejectTravel result [1] $self;
+  action ( features : instance ) acceptTravel result [1] $self;
+  action ( features : instance ) rejectTravel result [1] $self;
 
   // internal action that is called by determinations
   internal action ReCalcTotalPrice;
@@ -43,7 +49,7 @@ etag master LastChangedAt
   // instance factory action for copying travel instances
   factory action copyTravel [1];
 
-  association _Booking { create; }
+  association _Booking { create ( features : instance ); }
 }
 
 define behavior for ZMNGD_I_Booking_M alias Booking
@@ -72,10 +78,20 @@ etag master LastChangedAt
   update;
   delete;
 
+  // administrative fields: read only
+  field ( readonly ) LastChangedAt;
+
+  // static field control
+  field ( mandatory ) CarrierId, ConnectionId, FlightDate, BookingStatus;
+
+  // Fields that are mandatory for create but should be read-only afterwards
+  field ( mandatory : create, readonly : update ) BookingDate, CustomerId;
+  field ( mandatory ) CurrencyCode;
+
   field ( readonly ) TravelId, BookingId;
 
   association _Travel;
-  association _BookSupplement { create; }
+  association _BookSupplement { create ( features : instance ); }
 }
 
 define behavior for ZMNGD_I_BookSuppl_M alias Booksuppl
@@ -99,7 +115,11 @@ etag master LastChangedAt
 
   update;
   delete;
+  // administrative fields: read only
+  field ( readonly ) LastChangedAt;
 
+  // static field control
+  field ( mandatory ) price, SupplementId, CurrencyCode;
   field ( readonly ) TravelId, BookingId, BookingSupplementId;
 
   association _Travel;
