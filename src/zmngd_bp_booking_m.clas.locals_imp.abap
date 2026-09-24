@@ -4,6 +4,8 @@ CLASS lhc_booking DEFINITION INHERITING FROM cl_abap_behavior_handler.
 
     METHODS earlynumbering_cba_Booksupplem FOR NUMBERING
        entities FOR CREATE Booking\_Booksupplement.
+    METHODS get_instance_features FOR INSTANCE FEATURES
+      keys REQUEST requested_features FOR Booking RESULT result.
 
 ENDCLASS.
 
@@ -49,6 +51,23 @@ CLASS lhc_booking IMPLEMENTATION.
       ENDLOOP.
 
     ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD get_instance_features.
+
+    READ ENTITIES OF ZMNGD_I_Travel_M IN LOCAL MODE
+    ENTITY Booking
+    FIELDS ( BookingId BookingStatus )
+    WITH CORRESPONDING #( keys )
+    RESULT DATA(bookings)
+    FAILED failed.
+
+    result = VALUE #( FOR booking IN bookings (
+        %tky = booking-%tky
+        %assoc-_BookSupplement = COND #( WHEN booking-BookingStatus = 'B'
+                                         THEN if_abap_behv=>fc-o-disabled ELSE if_abap_behv=>fc-o-enabled )
+     ) ).
 
   ENDMETHOD.
 
