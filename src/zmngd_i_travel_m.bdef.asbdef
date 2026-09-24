@@ -115,7 +115,11 @@ etag master LastChangedAt
 
   update;
   delete;
+  // administrative fields: read only
+  field ( readonly ) LastChangedAt;
 
+  // static field control
+  field ( mandatory ) price, SupplementId, CurrencyCode;
   field ( readonly ) TravelId, BookingId, BookingSupplementId;
 
   association _Travel;
