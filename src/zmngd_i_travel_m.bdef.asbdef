@@ -49,6 +49,14 @@ etag master LastChangedAt
   // instance factory action for copying travel instances
   factory action copyTravel [1];
 
+  // validations
+  validation validateCustomer on save { create; field CustomerId; }
+  validation validateAgency on save { create; field AgencyId; }
+  validation validateDates on save { create; field BeginDate, EndDate; }
+  validation validateStatus on save { create; field OverallStatus; }
+  validation validateCurrencyCode on save { create; field CurrencyCode; }
+  validation validateBookingFee   on save { create; field BookingFee; }
+
   association _Booking { create ( features : instance ); }
 }
 
