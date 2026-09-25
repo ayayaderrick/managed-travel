@@ -137,6 +137,11 @@ etag master LastChangedAt
   field ( mandatory ) price, SupplementId, CurrencyCode;
   field ( readonly ) TravelId, BookingId, BookingSupplementId;
 
+  // validations
+  validation validateCurrencyCode on save { create; field CurrencyCode; }
+  validation validateSupplement   on save { create; field SupplementId; }
+  validation validatePrice        on save { create; field price; }
+
   association _Travel;
   association _Booking;
 }
