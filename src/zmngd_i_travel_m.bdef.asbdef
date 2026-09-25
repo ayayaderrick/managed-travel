@@ -98,6 +98,13 @@ etag master LastChangedAt
 
   field ( readonly ) TravelId, BookingId;
 
+  // validations
+  validation validateStatus on save { create; field BookingStatus; }
+  validation validateCustomer     on save { create; field CustomerId; }
+  validation validateConnection   on save { create; field CarrierId, ConnectionId, FlightDate; }
+  validation validateCurrencyCode on save { create; field CurrencyCode; }
+  validation validateFlightPrice  on save { create; field FlightPrice; }
+
   association _Travel;
   association _BookSupplement { create ( features : instance ); }
 }
