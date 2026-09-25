@@ -49,6 +49,14 @@ etag master LastChangedAt
   // instance factory action for copying travel instances
   factory action copyTravel [1];
 
+  // validations
+  validation validateCustomer on save { create; field CustomerId; }
+  validation validateAgency on save { create; field AgencyId; }
+  validation validateDates on save { create; field BeginDate, EndDate; }
+  validation validateStatus on save { create; field OverallStatus; }
+  validation validateCurrencyCode on save { create; field CurrencyCode; }
+  validation validateBookingFee   on save { create; field BookingFee; }
+
   association _Booking { create ( features : instance ); }
 }
 
@@ -90,6 +98,13 @@ etag master LastChangedAt
 
   field ( readonly ) TravelId, BookingId;
 
+  // validations
+  validation validateStatus on save { create; field BookingStatus; }
+  validation validateCustomer     on save { create; field CustomerId; }
+  validation validateConnection   on save { create; field CarrierId, ConnectionId, FlightDate; }
+  validation validateCurrencyCode on save { create; field CurrencyCode; }
+  validation validateFlightPrice  on save { create; field FlightPrice; }
+
   association _Travel;
   association _BookSupplement { create ( features : instance ); }
 }
@@ -121,6 +136,11 @@ etag master LastChangedAt
   // static field control
   field ( mandatory ) price, SupplementId, CurrencyCode;
   field ( readonly ) TravelId, BookingId, BookingSupplementId;
+
+  // validations
+  validation validateCurrencyCode on save { create; field CurrencyCode; }
+  validation validateSupplement   on save { create; field SupplementId; }
+  validation validatePrice        on save { create; field price; }
 
   association _Travel;
   association _Booking;

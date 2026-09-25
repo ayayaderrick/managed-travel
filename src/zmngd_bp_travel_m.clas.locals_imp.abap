@@ -16,6 +16,18 @@ CLASS lhc_travel DEFINITION INHERITING FROM cl_abap_behavior_handler.
        keys FOR ACTION Travel~rejectTravel RESULT result.
     METHODS get_instance_features FOR INSTANCE FEATURES
       keys REQUEST requested_features FOR Travel RESULT result.
+    METHODS validatecustomer FOR VALIDATE ON SAVE
+       keys FOR travel~validatecustomer.
+    METHODS validateagency FOR VALIDATE ON SAVE
+       keys FOR travel~validateagency.
+    METHODS validatedates FOR VALIDATE ON SAVE
+       keys FOR travel~validatedates.
+    METHODS validatestatus FOR VALIDATE ON SAVE
+       keys FOR travel~validatestatus.
+    METHODS validatecurrencycode FOR VALIDATE ON SAVE
+       keys FOR travel~validatecurrencycode.
+    METHODS validatebookingfee FOR VALIDATE ON SAVE
+       keys FOR travel~validatebookingfee.
 
 ENDCLASS.
 
@@ -352,7 +364,7 @@ CLASS lhc_travel IMPLEMENTATION.
     RESULT DATA(travels)
     FAILED failed.
 
-    result = value #( for travel in travels (
+    result = VALUE #( FOR travel IN travels (
         %tky = travel-%tky
         %features-%action-rejectTravel = COND #( WHEN travel-OverallStatus = 'X'
                                                  THEN if_abap_behv=>fc-o-disabled ELSE if_abap_behv=>fc-o-enabled )
@@ -361,6 +373,218 @@ CLASS lhc_travel IMPLEMENTATION.
         %assoc-_Booking = COND #( WHEN travel-OverallStatus = 'X'
                                   THEN if_abap_behv=>fc-o-disabled ELSE if_abap_behv=>fc-o-enabled )
      ) ).
+
+  ENDMETHOD.
+
+  METHOD validateCustomer.
+
+    " Read relevant travel instance data
+    READ ENTITIES OF zmngd_I_Travel_M IN LOCAL MODE
+    ENTITY travel
+    FIELDS ( CustomerId )
+    WITH CORRESPONDING #(  keys )
+    RESULT DATA(travels).
+
+    DATA customers TYPE SORTED TABLE OF /dmo/customer WITH UNIQUE KEY customer_id.
+    " Optimization of DB select: extract distinct non-initial customer IDs
+    customers = CORRESPONDING #( travels DISCARDING DUPLICATES MAPPING customer_id = CustomerId EXCEPT * ).
+
+    DELETE customers WHERE customer_id IS INITIAL.
+
+    IF customers IS NOT INITIAL.
+      " Check if customer ID exists
+      SELECT FROM /dmo/customer FIELDS customer_id
+        FOR ALL ENTRIES IN @customers
+        WHERE customer_id = @customers-customer_id
+        INTO TABLE @DATA(customers_db).
+    ENDIF.
+
+    " Raise msg for non existing and initial customer id
+    LOOP AT travels INTO DATA(travel).
+      IF travel-CustomerId IS INITIAL OR NOT line_exists( customers_db[ customer_id = travel-CustomerId ] ).
+        APPEND VALUE #(  %tky = travel-%tky ) TO failed-travel.
+        APPEND VALUE #(  %tky = travel-%tky
+                         %msg      = NEW /dmo/cm_flight_messages(
+                                         customer_id = travel-CustomerId
+                                         textid      = /dmo/cm_flight_messages=>customer_unkown
+                                         severity    = if_abap_behv_message=>severity-error )
+                         %element-CustomerId = if_abap_behv=>mk-on
+                      ) TO reported-travel.
+      ENDIF.
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD validateAgency.
+
+    " Read relevant travel instance data
+    READ ENTITIES OF zmngd_I_Travel_M IN LOCAL MODE
+    ENTITY travel
+     FIELDS ( AgencyId )
+     WITH CORRESPONDING #(  keys )
+    RESULT DATA(travels).
+
+    DATA agencies TYPE SORTED TABLE OF /dmo/agency WITH UNIQUE KEY agency_id.
+
+    " Optimization of DB select: extract distinct non-initial agency IDs
+    agencies = CORRESPONDING #(  travels DISCARDING DUPLICATES MAPPING agency_id = AgencyId EXCEPT * ).
+    DELETE agencies WHERE agency_id IS INITIAL.
+
+    IF  agencies IS NOT INITIAL.
+      " check if agency ID exist
+      SELECT FROM /dmo/agency FIELDS agency_id
+        FOR ALL ENTRIES IN @agencies
+        WHERE agency_id = @agencies-agency_id
+        INTO TABLE @DATA(agencies_db).
+    ENDIF.
+
+    " Raise msg for non existing and initial agency id
+    LOOP AT travels INTO DATA(travel).
+      IF travel-AgencyId IS INITIAL
+         OR NOT line_exists( agencies_db[ agency_id = travel-AgencyId ] ).
+
+        APPEND VALUE #(  %tky = travel-%tky ) TO failed-travel.
+        APPEND VALUE #( %tky               = travel-%tky
+                        %msg               = NEW /dmo/cm_flight_messages(
+                        textid    = /dmo/cm_flight_messages=>agency_unkown
+                        agency_id = travel-AgencyId
+                        severity  = if_abap_behv_message=>severity-error )
+                        %element-AgencyId = if_abap_behv=>mk-on
+                      ) TO reported-travel.
+      ENDIF.
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD validateDates.
+
+    READ ENTITIES OF zmngd_I_Travel_M IN LOCAL MODE
+    ENTITY travel
+    FIELDS ( BeginDate EndDate )
+    WITH CORRESPONDING #( keys )
+    RESULT DATA(travels).
+
+    LOOP AT travels INTO DATA(travel).
+      IF travel-EndDate < travel-BeginDate.  "end_date before begin_date
+        APPEND VALUE #( %tky = travel-%tky ) TO failed-travel.
+        APPEND VALUE #( %tky = travel-%tky
+                        %msg = NEW /dmo/cm_flight_messages(
+                                   textid     = /dmo/cm_flight_messages=>begin_date_bef_end_date
+                                   severity   = if_abap_behv_message=>severity-error
+                                   begin_date = travel-BeginDate
+                                   end_date   = travel-EndDate
+                                   travel_id  = travel-TravelId )
+                        %element-BeginDate   = if_abap_behv=>mk-on
+                        %element-EndDate     = if_abap_behv=>mk-on
+                     ) TO reported-travel.
+      ELSEIF travel-BeginDate < cl_abap_context_info=>get_system_date( ).  "begin_date must be in the future
+        APPEND VALUE #( %tky        = travel-%tky ) TO failed-travel.
+        APPEND VALUE #( %tky = travel-%tky
+                        %msg = NEW /dmo/cm_flight_messages(
+                                    textid   = /dmo/cm_flight_messages=>begin_date_on_or_bef_sysdate
+                                    severity = if_abap_behv_message=>severity-error )
+                        %element-BeginDate  = if_abap_behv=>mk-on
+                        %element-EndDate    = if_abap_behv=>mk-on
+                      ) TO reported-travel.
+      ENDIF.
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD validateStatus.
+
+    READ ENTITIES OF zmngd_I_Travel_M IN LOCAL MODE
+    ENTITY travel
+    FIELDS ( OverallStatus )
+    WITH CORRESPONDING #( keys )
+    RESULT DATA(travels).
+
+    LOOP AT travels INTO DATA(travel).
+      CASE travel-OverallStatus.
+        WHEN 'O'.  " Open
+        WHEN 'X'.  " Cancelled
+        WHEN 'A'.  " Accepted
+
+        WHEN OTHERS.
+          APPEND VALUE #( %tky = travel-%tky ) TO failed-travel.
+
+          APPEND VALUE #( %tky                    = travel-%tky
+                          %msg                    = NEW /dmo/cm_flight_messages(
+                          textid   = /dmo/cm_flight_messages=>status_invalid
+                          severity = if_abap_behv_message=>severity-error
+                          status   = travel-OverallStatus )
+                          %element-OverallStatus = if_abap_behv=>mk-on
+                        ) TO reported-travel.
+      ENDCASE.
+
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD validateCurrencyCode.
+
+    READ ENTITIES OF zmngd_I_Travel_M IN LOCAL MODE
+    ENTITY travel
+    FIELDS ( CurrencyCode )
+    WITH CORRESPONDING #( keys )
+    RESULT DATA(travels).
+
+    DATA currencies TYPE SORTED TABLE OF I_Currency WITH UNIQUE KEY currency.
+
+    currencies = CORRESPONDING #(  travels DISCARDING DUPLICATES MAPPING currency = CurrencyCode EXCEPT * ).
+    DELETE currencies WHERE currency IS INITIAL.
+
+    IF currencies IS NOT INITIAL.
+      SELECT FROM I_Currency FIELDS currency
+        FOR ALL ENTRIES IN @currencies
+        WHERE currency = @currencies-currency
+        INTO TABLE @DATA(currency_db).
+    ENDIF.
+
+
+    LOOP AT travels INTO DATA(travel).
+      IF travel-CurrencyCode IS INITIAL.
+        " Raise message for empty Currency
+        APPEND VALUE #( %tky                   = travel-%tky ) TO failed-travel.
+        APPEND VALUE #( %tky                   = travel-%tky
+                        %msg                   = NEW /dmo/cm_flight_messages(
+                        textid   = /dmo/cm_flight_messages=>currency_required
+                        severity = if_abap_behv_message=>severity-error )
+                        %element-CurrencyCode = if_abap_behv=>mk-on
+                      ) TO reported-travel.
+      ELSEIF NOT line_exists( currency_db[ currency = travel-CurrencyCode ] ).
+        " Raise message for not existing Currency
+        APPEND VALUE #( %tky                   = travel-%tky ) TO failed-travel.
+        APPEND VALUE #( %tky                   = travel-%tky
+                        %msg                   = NEW /dmo/cm_flight_messages(
+                        textid        = /dmo/cm_flight_messages=>currency_not_existing
+                        severity      = if_abap_behv_message=>severity-error
+                        currency_code = travel-CurrencyCode )
+                        %element-CurrencyCode = if_abap_behv=>mk-on
+                      ) TO reported-travel.
+      ENDIF.
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD validateBookingFee.
+
+    READ ENTITIES OF zmngd_I_Travel_M IN LOCAL MODE
+    ENTITY travel
+    FIELDS ( BookingFee )
+    WITH CORRESPONDING #( keys )
+    RESULT DATA(travels).
+
+    LOOP AT travels INTO DATA(travel) WHERE BookingFee < 0.
+      " Raise message for booking fee < 0
+      APPEND VALUE #( %tky                 = travel-%tky ) TO failed-travel.
+      APPEND VALUE #( %tky                 = travel-%tky
+                      %msg                 = NEW /dmo/cm_flight_messages(
+                      textid   = /dmo/cm_flight_messages=>booking_fee_invalid
+                      severity = if_abap_behv_message=>severity-error )
+                      %element-BookingFee = if_abap_behv=>mk-on
+                    ) TO reported-travel.
+    ENDLOOP.
 
   ENDMETHOD.
 
