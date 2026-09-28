@@ -4,6 +4,7 @@ strict ( 2 );
 define behavior for ZMNGD_I_Travel_M alias Travel
 implementation in class zmngd_bp_travel_m unique
 persistent table zmngd_travel_m
+with additional save
 lock master
 early numbering
 authorization master ( none )
