@@ -57,6 +57,8 @@ etag master LastChangedAt
   validation validateCurrencyCode on save { create; field CurrencyCode; }
   validation validateBookingFee   on save { create; field BookingFee; }
 
+  determination calculateTotalPrice on modify { create; field BookingFee, CurrencyCode; }
+
   association _Booking { create ( features : instance ); }
 }
 
@@ -105,6 +107,9 @@ etag master LastChangedAt
   validation validateCurrencyCode on save { create; field CurrencyCode; }
   validation validateFlightPrice  on save { create; field FlightPrice; }
 
+  // determination for calculation of total flight price
+  determination calculateTotalPrice on modify { create; field FlightPrice, CurrencyCode; }
+
   association _Travel;
   association _BookSupplement { create ( features : instance ); }
 }
@@ -141,6 +146,9 @@ etag master LastChangedAt
   validation validateCurrencyCode on save { create; field CurrencyCode; }
   validation validateSupplement   on save { create; field SupplementId; }
   validation validatePrice        on save { create; field price; }
+
+  // determination for calculation of total suppl. price
+  determination calculateTotalPrice on modify { create; field price, currencycode; }
 
   association _Travel;
   association _Booking;
