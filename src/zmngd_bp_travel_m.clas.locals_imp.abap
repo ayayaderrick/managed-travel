@@ -28,6 +28,8 @@ CLASS lhc_travel DEFINITION INHERITING FROM cl_abap_behavior_handler.
        keys FOR travel~validatecurrencycode.
     METHODS validatebookingfee FOR VALIDATE ON SAVE
        keys FOR travel~validatebookingfee.
+    METHODS calculatetotalprice FOR DETERMINE ON MODIFY
+       keys FOR travel~calculatetotalprice.
 
 ENDCLASS.
 
@@ -585,6 +587,15 @@ CLASS lhc_travel IMPLEMENTATION.
                       %element-BookingFee = if_abap_behv=>mk-on
                     ) TO reported-travel.
     ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD calculateTotalPrice.
+
+    MODIFY ENTITIES OF ZMNGD_I_Travel_M IN LOCAL MODE
+    ENTITY Travel
+    EXECUTE ReCalcTotalPrice
+    FROM CORRESPONDING #( keys ).
 
   ENDMETHOD.
 

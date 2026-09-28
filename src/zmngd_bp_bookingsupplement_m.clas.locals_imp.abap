@@ -3,11 +3,13 @@ CLASS lhc_booksuppl DEFINITION INHERITING FROM cl_abap_behavior_handler.
   PRIVATE SECTION.
 
     METHODS validateCurrencyCode FOR VALIDATE ON SAVE
-      keys FOR Booksuppl~validateCurrencyCode.
+       keys FOR Booksuppl~validateCurrencyCode.
     METHODS validateSupplement FOR VALIDATE ON SAVE
-      keys FOR Booksuppl~validateSupplement.
+       keys FOR Booksuppl~validateSupplement.
     METHODS validatePrice FOR VALIDATE ON SAVE
-      keys FOR Booksuppl~validatePrice.
+       keys FOR Booksuppl~validatePrice.
+    METHODS calculateTotalPrice FOR DETERMINE ON MODIFY
+       keys FOR Booksuppl~calculateTotalPrice.
 
 ENDCLASS.
 
@@ -15,11 +17,11 @@ CLASS lhc_booksuppl IMPLEMENTATION.
 
   METHOD validateCurrencyCode.
 
-      READ ENTITIES OF ZMNGD_I_Travel_M IN LOCAL MODE
-      ENTITY booksuppl
-      FIELDS ( CurrencyCode )
-      WITH CORRESPONDING #( keys )
-      RESULT DATA(booking_supplements).
+    READ ENTITIES OF ZMNGD_I_Travel_M IN LOCAL MODE
+    ENTITY booksuppl
+    FIELDS ( CurrencyCode )
+    WITH CORRESPONDING #( keys )
+    RESULT DATA(booking_supplements).
 
     DATA: currencies TYPE SORTED TABLE OF I_Currency WITH UNIQUE KEY currency.
 
@@ -159,6 +161,19 @@ CLASS lhc_booksuppl IMPLEMENTATION.
                       %element-price = if_abap_behv=>mk-on
                     ) TO reported-booksuppl.
     ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD calculateTotalPrice.
+
+    DATA: travel_ids TYPE STANDARD TABLE OF ZMNGD_I_Travel_M WITH UNIQUE HASHED KEY key COMPONENTS TravelId.
+
+    travel_ids = CORRESPONDING #( keys DISCARDING DUPLICATES MAPPING TravelId = TravelId ).
+
+    MODIFY ENTITIES OF zmngd_I_Travel_M IN LOCAL MODE
+    ENTITY Travel
+    EXECUTE ReCalcTotalPrice
+    FROM CORRESPONDING #( travel_ids ).
 
   ENDMETHOD.
 

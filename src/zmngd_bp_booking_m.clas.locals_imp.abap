@@ -15,7 +15,9 @@ CLASS lhc_booking DEFINITION INHERITING FROM cl_abap_behavior_handler.
     METHODS validatecurrencycode FOR VALIDATE ON SAVE
        keys FOR booking~validatecurrencycode.
     METHODS validateflightprice FOR VALIDATE ON SAVE
-      keys FOR booking~validateflightprice.
+       keys FOR booking~validateflightprice.
+    METHODS calculatetotalprice FOR DETERMINE ON MODIFY
+       keys FOR booking~calculatetotalprice.
 
 ENDCLASS.
 
@@ -322,6 +324,19 @@ CLASS lhc_booking IMPLEMENTATION.
                       %path = VALUE #( travel-%tky = travel_booking_links[ KEY id source-%tky = booking-%tky ]-target-%tky )
                     ) TO reported-booking.
     ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD calculateTotalPrice.
+
+    DATA travel_ids TYPE STANDARD TABLE OF ZMNGD_I_Travel_M WITH UNIQUE HASHED KEY key COMPONENTS TravelId.
+
+    travel_ids = CORRESPONDING #( keys DISCARDING DUPLICATES MAPPING TravelId = TravelId ).
+
+    MODIFY ENTITIES OF ZMNGD_I_Travel_M IN LOCAL MODE
+    ENTITY Travel
+    EXECUTE ReCalcTotalPrice
+    FROM CORRESPONDING #( travel_ids ).
 
   ENDMETHOD.
 
