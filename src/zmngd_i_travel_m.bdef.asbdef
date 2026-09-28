@@ -117,6 +117,7 @@ etag master LastChangedAt
 define behavior for ZMNGD_I_BookSuppl_M alias Booksuppl
 implementation in class zmngd_bp_bookingsupplement_m unique
 persistent table zmngd_booksupp_m
+with additional save
 lock dependent by _Travel
 early numbering
 authorization dependent by _Travel
