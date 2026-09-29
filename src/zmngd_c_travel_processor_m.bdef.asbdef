@@ -1,0 +1,31 @@
+projection;
+strict ( 2 );
+
+define behavior for ZMNGD_C_TRAVEL_PROCESSOR_M alias TravelProcessor
+{
+  use create;
+  use update;
+  use delete;
+
+  use action copyTravel;
+
+  use association _Booking { create; }
+}
+
+define behavior for ZMNGD_C_Booking_Processor_M alias Booking
+{
+  use update;
+  use delete;
+
+  use association _Travel;
+  use association _BookSupplement { create; }
+}
+
+define behavior for ZMNGD_C_BookSuppl_Processor_M alias Booksuppl
+{
+  use update;
+  use delete;
+
+  use association _Travel;
+  use association _Booking;
+}
