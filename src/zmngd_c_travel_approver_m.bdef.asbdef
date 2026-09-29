@@ -1,0 +1,13 @@
+projection;
+strict ( 2 );
+
+define behavior for ZMNGD_C_TRAVEL_APPROVER_M alias Approver
+{
+  field ( readonly ) BeginDate, EndDate, TotalPrice, CustomerID;
+
+  use update;
+
+  use action acceptTravel;
+  use action rejectTravel;
+
+}
