@@ -1,0 +1,12 @@
+@EndUserText.label: 'Service Definition for Managing Travels'
+@ObjectModel.leadingEntity.name: 'ZMNGD_C_TRAVEL_APPROVER_M'
+define service ZMNGD_UI_TRAVEL_Approver_M {
+  expose ZMNGD_C_TRAVEL_APPROVER_M  as Travel;
+  expose ZMNGD_C_Booking_Approver_M as Booking;
+  expose /DMO/I_Customer_StdVH      as Passenger;
+  expose /DMO/I_Agency_StdVH        as TravelAgency;
+  expose I_CurrencyStdVH            as Currency;
+  expose I_CountryVH                as Country;
+  expose /DMO/I_Overall_Status_VH   as OverallStatus;
+  expose /DMO/I_Booking_Status_VH   as BookingStatus;
+}
