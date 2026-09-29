@@ -152,6 +152,64 @@ CLASS lsc_zmngd_i_travel_m IMPLEMENTATION.
 
 
 
+********************************************************************************
+*
+* Implements unmanaged save
+*
+********************************************************************************
+    DATA booksuppls_db TYPE STANDARD TABLE OF zmngd_booksupp_m.
+
+    " (1) Get instance data of all instances that have been created
+    IF create-booksuppl IS NOT INITIAL.
+      booksuppls_db = CORRESPONDING #( create-booksuppl MAPPING FROM ENTITY ).
+
+      CALL FUNCTION '/DMO/FLIGHT_BOOKSUPPL_C' EXPORTING values = booksuppls_db.
+
+    ENDIF.
+
+    " (2) Get instance data of all instances that have been updated during the transaction
+    booksuppls_db = CORRESPONDING #( update-booksuppl MAPPING FROM ENTITY ).
+    IF booksuppls_db IS NOT INITIAL.
+
+      " Read all field values from database
+      SELECT * FROM zmngd_booksupp_m FOR ALL ENTRIES IN @booksuppls_db
+               WHERE booking_supplement_id = @booksuppls_db-booking_supplement_id
+               INTO TABLE @booksuppls_db .
+
+      " Take over field values that have been changed during the transaction
+      LOOP AT update-booksuppl ASSIGNING FIELD-SYMBOL(<unmanaged_booksuppl>).
+        ASSIGN booksuppls_db[ travel_id  = <unmanaged_booksuppl>-TravelId
+                              booking_id = <unmanaged_booksuppl>-BookingId
+                   booking_supplement_id = <unmanaged_booksuppl>-BookingSupplementId
+                            ] TO FIELD-SYMBOL(<booksuppl_db>).
+
+        IF <unmanaged_booksuppl>-%control-SupplementId = if_abap_behv=>mk-on.
+          <booksuppl_db>-supplement_id = <unmanaged_booksuppl>-SupplementId.
+        ENDIF.
+
+        IF <unmanaged_booksuppl>-%control-price = if_abap_behv=>mk-on.
+          <booksuppl_db>-price = <unmanaged_booksuppl>-price.
+        ENDIF.
+
+        IF <unmanaged_booksuppl>-%control-CurrencyCode = if_abap_behv=>mk-on.
+          <booksuppl_db>-currency_code = <unmanaged_booksuppl>-CurrencyCode.
+        ENDIF.
+
+      ENDLOOP.
+
+      " Update the complete instance data
+      CALL FUNCTION '/DMO/FLIGHT_BOOKSUPPL_U' EXPORTING values = booksuppls_db.
+
+    ENDIF.
+
+    " (3) Get keys of all travel instances that have been deleted during the transaction
+    IF delete-booksuppl IS NOT INITIAL.
+      booksuppls_db = CORRESPONDING #( delete-booksuppl MAPPING FROM ENTITY ).
+
+      CALL FUNCTION '/DMO/FLIGHT_BOOKSUPPL_D' EXPORTING values = booksuppls_db.
+
+    ENDIF.
+
   ENDMETHOD.
 
 ENDCLASS.
